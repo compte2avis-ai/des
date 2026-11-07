@@ -1,5 +1,5 @@
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
-from telegram.ext import ApplicationBuilder, CommandHandler, CallbackQueryHandler, MessageHandler, filters, ContextTypes
+from telegram.ext import ApplicationBuilder, CommandHandler, CallbackQueryHandler, ContextTypes
 
 # ⚙️ CONFIGURATION
 TOKEN = "8736667685:AAGI5yXvHD5ZDB18on43wIjJQYI3cBzPQ9w"  # 👈 N'OUBLIE PAS DE METTRE TON TOKEN ICI !
@@ -10,7 +10,6 @@ WALLET_LTC = "ltc1qwy40a9gr0r3mz65vky2nx3zuq6txz7ffuxhxpn"
 WALLET_ETH = "0x5900e982f8189F93b88A1290dB8Bc62F779D2b48"
 PAYPAL_LINK = "https://paypal.me/AbdoulayeFofanah777"
 TON_USERNAME = "@X4RCS"
-CODE_PROMO = "X4RCS"
 
 # --- 1. COMMANDE /START ---
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -22,8 +21,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "👇 <i>Que souhaites-tu faire ?</i>"
     )
     keyboard = [
-        [InlineKeyboardButton("⭐ Acheter des étoiles", callback_data="acheter")],
-        [InlineKeyboardButton("🎟️ Code Promo", callback_data="promo")]
+        [InlineKeyboardButton("⭐ Acheter des étoiles", callback_data="acheter")]
     ]
     await update.message.reply_text(texte, reply_markup=InlineKeyboardMarkup(keyboard), parse_mode="HTML")
 
@@ -41,7 +39,7 @@ async def bouton_acheter(update: Update, context: ContextTypes.DEFAULT_TYPE):
         [InlineKeyboardButton("⭐ 2500 étoiles - 40,00€", callback_data="pack_2500")],
         [InlineKeyboardButton("⭐ 5000 étoiles - 80,00€", callback_data="pack_5000")],
         [InlineKeyboardButton("⭐ 10000 étoiles - 150,00€", callback_data="pack_10000")],
-        [InlineKeyboardButton("🔙 Retour", callback_data="start")]
+        [InlineKeyboardButton("🔙 Retour", callback_data="start")]  # Retour au menu principal
     ]
     await query.edit_message_text(texte, reply_markup=InlineKeyboardMarkup(keyboard), parse_mode="HTML")
 
@@ -58,7 +56,7 @@ async def choix_paiement(update: Update, context: ContextTypes.DEFAULT_TYPE):
     keyboard = [
         [InlineKeyboardButton("🅿️ PayPal", callback_data="pay_paypal")],
         [InlineKeyboardButton("🪙 Crypto", callback_data="pay_crypto")],
-        [InlineKeyboardButton("🔙 Retour", callback_data="acheter")]
+        [InlineKeyboardButton("🔙 Retour", callback_data="acheter")]  # Retour au choix du pack
     ]
     await query.edit_message_text(texte, reply_markup=InlineKeyboardMarkup(keyboard), parse_mode="HTML")
 
@@ -73,6 +71,22 @@ async def choix_crypto(update: Update, context: ContextTypes.DEFAULT_TYPE):
     keyboard = [
         [InlineKeyboardButton("🔷 Ethereum (ETH)", callback_data="crypto_ETH")],
         [InlineKeyboardButton("🔵 Litecoin (LTC)", callback_data="crypto_LTC")],
+        [InlineKeyboardButton("🔙 Retour", callback_data="retour_paiement")]  # Retour au choix PayPal/Crypto
+    ]
+    await query.edit_message_text(texte, reply_markup=InlineKeyboardMarkup(keyboard), parse_mode="HTML")
+
+# --- 4.5. RETOUR VERS LE CHOIX PAYPAL / CRYPTO ---
+async def retour_paiement(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    query = update.callback_query
+    await query.answer()
+    pack = context.user_data.get('pack', 'Inconnu')
+    texte = (
+        f"✅ <b>Pack sélectionné : {pack} étoiles ⭐️</b>\n\n"
+        "💳 <b>Comment souhaites-tu payer ?</b>"
+    )
+    keyboard = [
+        [InlineKeyboardButton("🅿️ PayPal", callback_data="pay_paypal")],
+        [InlineKeyboardButton("🪙 Crypto", callback_data="pay_crypto")],
         [InlineKeyboardButton("🔙 Retour", callback_data="acheter")]
     ]
     await query.edit_message_text(texte, reply_markup=InlineKeyboardMarkup(keyboard), parse_mode="HTML")
@@ -160,36 +174,6 @@ async def admin_recu(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await context.bot.send_message(chat_id=client_id, text=texte_client, parse_mode="HTML")
     await query.edit_message_text("✅ Commande terminée avec succès. Le client a été notifié.")
 
-# --- 8. BOUTON CODE PROMO ---
-async def bouton_promo(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    query = update.callback_query
-    await query.answer()
-    
-    texte = (
-        "🎟️ <b>Code Promo</b> 🎟️\n\n"
-        "Pour profiter de nos offres, utilise le code promo suivant :\n\n"
-        f"👉 <code>{CODE_PROMO}</code> 👈\n\n"
-        "⚠️ <i>Copie ce code et envoie-le en message à l'administrateur pour valider ta réduction !</i>"
-    )
-    keyboard = [[InlineKeyboardButton("🔙 Retour", callback_data="start")]]
-    await query.edit_message_text(texte, reply_markup=InlineKeyboardMarkup(keyboard), parse_mode="HTML")
-
-# --- 9. VÉRIFICATION DU CODE PROMO ---
-async def verifier_code(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    texte = update.message.text.strip().upper()
-    if texte == CODE_PROMO:
-        await update.message.reply_text(
-            "✅ <b>Code promo validé !</b> 🎉\n\n"
-            "Ta réduction a bien été prise en compte. Contacte l'administrateur pour finaliser ton achat.",
-            parse_mode="HTML"
-        )
-    else:
-        await update.message.reply_text(
-            "❌ <b>Code invalide.</b>\n\n"
-            "Vérifie le code et réessaie.",
-            parse_mode="HTML"
-        )
-
 # --- DÉMARRAGE DU BOT ---
 if __name__ == '__main__':
     app = ApplicationBuilder().token(TOKEN).build()
@@ -198,11 +182,10 @@ if __name__ == '__main__':
     app.add_handler(CallbackQueryHandler(bouton_acheter, pattern="^acheter$"))
     app.add_handler(CallbackQueryHandler(choix_paiement, pattern="^pack_"))
     app.add_handler(CallbackQueryHandler(choix_crypto, pattern="^pay_crypto$"))
+    app.add_handler(CallbackQueryHandler(retour_paiement, pattern="^retour_paiement$"))
     app.add_handler(CallbackQueryHandler(recevoir_commande, pattern="^pay_paypal$|^crypto_"))
     app.add_handler(CallbackQueryHandler(admin_confirmer, pattern="^admin_confirm_"))
     app.add_handler(CallbackQueryHandler(admin_recu, pattern="^admin_recu_"))
-    app.add_handler(CallbackQueryHandler(bouton_promo, pattern="^promo$"))
-    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, verifier_code))
     
     print("Le bot Nextbox est en ligne !")
     app.run_polling()
